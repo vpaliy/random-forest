@@ -1,0 +1,7 @@
+six
+future-fstrings
+matplotlib
+numpy
+sklearn
+pandas
+scipy
