@@ -1,4 +1,14 @@
 import numpy as np
+import random
+
+def subsample(X, y, ratio=0.5):
+  size = int(round(X.shape[0] * ratio))
+  subsets = []
+  for _ in range(size):
+    index = random.randrange(X.shape[0])
+    subsets.append((X[index,:], y[index]))
+  return subsets
+
 
 def _gini_index(y, y_left, y_right):
   n_l = float(y_left.shape[0]) / (y.shape[0])

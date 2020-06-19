@@ -2,15 +2,16 @@
 # -*- coding: utf-8
 from __future__ import print_function
 
+import numpy as np
+
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
-from randforest.trees import RegressionTree, ClassificationTree
+from randforest.trees import RegressionTree, ClassificationTree, BaggedCART
 
-import numpy as np
 
 
 def get_data(loader, test_size=0.5):
@@ -37,8 +38,10 @@ def regression():
 def classification():
   X_train, X_test, y_train, y_test = get_data(datasets.load_iris)
 
-  model = ClassificationTree(max_depth=2)
-  model.fit(X_train, y_train)
+  trees = [ClassificationTree(max_depth=2) for _ in range(10)]
+  model = BaggedCART.build_classifier(trees)
+  # model = ClassificationTree(max_depth=2)
+  model.fit(X_train, y_train, 0.50)
 
   tree = DecisionTreeClassifier(max_depth=2)
   tree.fit(X_train, y_train)

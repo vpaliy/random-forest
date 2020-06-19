@@ -7,7 +7,7 @@ import abc
 import numpy as np
 
 from collections import namedtuple
-from randforest.utils import _gini_index
+from randforest.utils import _gini_index, subsample
 
 
 Leaf = namedtuple('Leaf', 'value')
@@ -67,14 +67,13 @@ class _BaseCART(object):
         for val in np.unique(X[:, feature]):
           y_left = y[X[:, feature] <= val]
           y_right = y[X[:, feature] > val]
-          # calculate impurity of the split
+          # calculate impurity
           impurity = self.impurity_func(y, y_left, y_right)
           # save the best information gain
           if node < impurity:
             node.impurity = impurity
             node.threshold = val
             node.feature = feature
-      # how to justify the split?
       left = X[:, node.feature] <= node.threshold
       right = X[:, node.feature] > node.threshold
       # build the tree
@@ -96,3 +95,44 @@ class RegressionTree(_BaseCART):
 class ClassificationTree(_BaseCART):
   def terminate(self, y):
     return Leaf(np.bincount(y).argmax())
+
+
+class BaggedCART(object):
+  def __init__(self, trees, bagged_pred_f):
+    self.trees = trees
+    self.bagged_pred_f = bagged_pred_f
+
+  def append(self, tree):
+    self.trees.append(tree)
+
+  def fit(self, X, y, sample_size=None):
+    if sample_size is None:
+      sample_size = math.sqrt(X.shape[0])
+    for tree in self.trees:
+      Xs, ys = subsample(X, y, sample_size)
+      tree.fit(Xs, ys)
+
+  def predict(self, X):
+    predicted = np.empty((X.shape[0], len(self.trees)))
+    for i, tree in enumerate(self.trees):
+      predicted[:, i] = tree.predict(X)
+    return conclusion(predicted)
+
+  @staticmethod
+  def build_classifier(trees):
+    def _pred(predicted):
+      y_pred = []
+      for y in predicted:
+        y_pred.append(np.bitcount(y.astype('int')).argmax())
+      return y_pred
+    return BaggedCART(trees, _pred)
+
+  @staticmethod
+  def build_regressor(trees):
+    def _pred(predicted):
+      y_pred = []
+      for y in predicted:
+        y_pred.append(np.mean(y))
+      return y_pred
+    return BaggedCART(trees, _pred)
+  
