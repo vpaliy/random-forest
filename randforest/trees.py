@@ -105,25 +105,23 @@ class BaggedCART(object):
   def append(self, tree):
     self.trees.append(tree)
 
-  def fit(self, X, y, sample_size=None):
-    if sample_size is None:
-      sample_size = math.sqrt(X.shape[0])
-    for tree in self.trees:
-      Xs, ys = subsample(X, y, sample_size)
-      tree.fit(Xs, ys)
+  def fit(self, X, y, sample_size_ratio=0.5):
+    samples = subsample(X, y, len(self.trees), sample_size_ratio)
+    for tree, (Xt, yt) in zip(self.trees, samples):
+      tree.fit(Xt, yt)
 
   def predict(self, X):
     predicted = np.empty((X.shape[0], len(self.trees)))
     for i, tree in enumerate(self.trees):
       predicted[:, i] = tree.predict(X)
-    return conclusion(predicted)
+    return self.bagged_pred_f(predicted)
 
   @staticmethod
   def build_classifier(trees):
     def _pred(predicted):
       y_pred = []
       for y in predicted:
-        y_pred.append(np.bitcount(y.astype('int')).argmax())
+        y_pred.append(np.bincount(y.astype('int')).argmax())
       return y_pred
     return BaggedCART(trees, _pred)
 
@@ -135,4 +133,3 @@ class BaggedCART(object):
         y_pred.append(np.mean(y))
       return y_pred
     return BaggedCART(trees, _pred)
-  

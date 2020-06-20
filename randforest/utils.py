@@ -1,13 +1,14 @@
 import numpy as np
 import random
 
-def subsample(X, y, ratio=0.5):
-  size = int(round(X.shape[0] * ratio))
-  subsets = []
-  for _ in range(size):
-    index = random.randrange(X.shape[0])
-    subsets.append((X[index,:], y[index]))
-  return subsets
+
+def subsample(X, y, n_subsets, ratio=0.5, replacements=True):
+  subsample_size = int(round(X.shape[0] * ratio))
+  idx = np.random.choice(
+      X.shape[0],
+      size=(n_subsets, subsample_size),
+  )
+  return zip(X[idx], y[idx])
 
 
 def _gini_index(y, y_left, y_right):
