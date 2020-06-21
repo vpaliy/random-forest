@@ -5,6 +5,7 @@ import functools
 import six
 import abc
 import numpy as np
+import math
 
 from collections import namedtuple
 from randforest.utils import _gini_index, subsample
@@ -133,3 +134,45 @@ class BaggedCART(object):
         y_pred.append(np.mean(y))
       return y_pred
     return BaggedCART(trees, _pred)
+
+
+class RandomForest(object):
+  def __init__(self, trees, pred_f, max_features=None):
+    self.trees = trees
+    self.pred_f = pred_f
+    self.max_features = max_features
+
+  def fit(self, X, y, sample_size_ratio=0.5):
+    if not self.max_features:
+      self.max_features = int(math.sqrt(X.shape[0]))
+    samples = subsample(X, y, len(self.trees), sample_size_ratio)
+    # train the trees
+    for tree, (Xt, yt) in zip(self.trees, samples):
+      features = np.random.choice(X.shape[1], self.max_features, replace=True)
+      tree.features = features
+      Xt = Xt[:, features]
+      tree.fit(Xt, yt)
+
+  def predict(self, X):
+    predicted = np.empty((X.shape[0], len(self.trees)))
+    for i, tree in enumerate(self.trees):
+      predicted[:, i] = tree.predict(X[:, tree.features])
+    return self.pred_f(predicted)
+
+  @staticmethod
+  def build_classifier(trees):
+    def _pred(predicted):
+      y_pred = []
+      for y in predicted:
+        y_pred.append(np.bincount(y.astype('int')).argmax())
+      return y_pred
+    return RandomForest(trees, _pred)
+
+  @staticmethod
+  def build_regressor(trees):
+    def _pred(predicted):
+      y_pred = []
+      for y in predicted:
+        y_pred.append(np.mean(y))
+      return y_pred
+    return RandomForest(trees, _pred)

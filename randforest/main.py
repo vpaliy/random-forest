@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 
-from randforest.trees import RegressionTree, ClassificationTree, BaggedCART
+from randforest.trees import RegressionTree, ClassificationTree, BaggedCART, RandomForest
 
 
 
@@ -38,13 +38,11 @@ def regression():
 def classification():
   X_train, X_test, y_train, y_test = get_data(datasets.load_iris)
 
-  trees = [ClassificationTree(max_depth=3) for _ in range(100)]
-  model = BaggedCART.build_classifier(trees)
-  model.fit(X_train, y_train, 0.20)
+  model = RandomForest.build_classifier([ClassificationTree(max_depth=2) for _ in range(10)])
+  model.fit(X_train, y_train)
 
-  trees = [DecisionTreeClassifier(max_depth=3) for _ in range(100)]
-  tree = BaggedCART.build_classifier(trees)
-  tree.fit(X_train, y_train, 0.20)
+  tree = DecisionTreeClassifier(max_depth=2)
+  tree.fit(X_train, y_train)
 
   print(f'Accuracy score (custom): {accuracy_score(model.predict(X_test), y_test)}')
   print(f'Accuracy score (sckikit): {accuracy_score(tree.predict(X_test), y_test)}')
